@@ -2,6 +2,9 @@
 import rospy
 from geometry_msgs.msg import Vector3
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Quaternion
+from nav_msgs.msg import Odometry
+
 from sensor_msgs.msg import CameraInfo
 
 import time
@@ -14,10 +17,19 @@ class ControlVision:
   pub_cmd_vel = None
   msg_twist = None
   camera_info = None
+  pub_quaternion = None
+  odometry_data = None
 
   def __init__ (self):
+    rospy.loginfo("INIT CONTROL VISION")
     rospy.init_node("robot_vision", anonymous=True)
     self.pub_cmd_vel = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
+    
+    self.pub_quaternion = rospy.Publisher("/rotation_quaternion", Quaternion, queue_size=1)
+    rospy.Subscriber("/odometry/filtered", Odometry, self.callback_odometry)
+    
+    rospy.Subscriber("/rpy_angles", Vector3, self.callback_rpy_angles)
+    
     self.control_pid_x = ControlPid(5, -5, 0.01, 0, 0)
     self.control_pid_yaw = ControlPid(3, -3, 0.001, 0, 0)
     self.msg_twist = Twist()
@@ -31,6 +43,19 @@ class ControlVision:
 
   def callback_camera_info(self, data):
     self.camera_info = data
+  
+  def callback_odometry(self, data):
+    self.odometry_data = data
+    quaternion = Quaternion()
+    quaternion.x = data.pose.pose.orientation.x
+    quaternion.y = data.pose.pose.orientation.y
+    quaternion.z = data.pose.pose.orientation.z
+    quaternion.w = data.pose.pose.orientation.w
+    self.pub_quaternion.publish(quaternion)
+  
+  def callback_rpy_angles(self, data):
+    rospy.loginfo("ENTROU AQUI")
+    rospy.loginfo(data)
 
   def run(self):
     self.msg = rospy.Subscriber("/camera/obj/coordinates", Vector3, self.callback)
