@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- <include file="$(find cimatec_map)/launch/gazebo.launch">
+  </include> -->
+  
+  <!-- Import files .py -->
+  <node pkg="cimatec_simulation" name="opencv_camera" type="objectDetection.py" output="screen" />
+  <node pkg="cimatec_simulation" name="robot_vision" type="control_vision.py" output="screen" />
+  <!-- <node pkg="cimatec_simulation" name="robot_vision" type="control_vision.py" output="screen">
+    <param name="sat_max" value="6.0"/>
+    <param name="sat_min" value="6.0"/>
+    <param name="kp" value="6.0"/>
+    <param name="ki" value="6.0"/>
+    <param name="kd" value="6.0"/>
+  </node> -->
+  
+  <arg name="world_name" default="$(find cimatec_simulation)/worlds/cimatec_world.world"/>
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(arg world_name)"/> 
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+  </include>
+
+  <arg name="laser_enabled" default="false"/>
+  <arg name="kinect_enabled" default="false"/>
+  <arg name="urdf_extras" default="$(find cimatec_simulation)/urdf/main.urdf.xacro"/>
+
+  <include file="$(find husky_gazebo)/launch/spawn_husky.launch">
+    <arg name="laser_enabled" value="$(arg laser_enabled)"/>
+    <arg name="kinect_enabled" value="$(arg kinect_enabled)"/>
+    <arg name="urdf_extras" default="$(arg urdf_extras)"/>
+  </include>
+
+  <!-- RViz -->
+  <arg name="rviz" default="false"/>
+  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="$(anon rviz)" respawn="false" output="screen" args="-d $(find velodyne_description)/rviz/example.rviz" />
+
+  <node pkg="pointcloud_to_laserscan"
+    type="pointcloud_to_laserscan_node"
+    name="pointcloud_to_laserscan_node"
+    args="cloud_in:=/velodyne_points" />  
+
+  <arg name="scan_topic" default="scan"/>
+  <arg name="base_frame" default="base_link"/>
+  <arg name="odom_frame" default="odom"/>
+
+  <!-- <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
+    <remap from="scan" to="$(arg scan_topic)"/>
+    <param name="base_frame" value="$(arg base_frame)"/>
+    <param name="odom_frame" value="$(arg odom_frame)"/>
+    <param name="map_update_interval" value="5.0"/>
+    <param name="maxUrange" value="6.0"/>
+    <param name="maxRange" value="8.0"/>
+    <param name="sigma" value="0.05"/>
+    <param name="kernelSize" value="1"/>
+    <param name="lstep" value="0.05"/>
+    <param name="astep" value="0.05"/>
+    <param name="iterations" value="5"/>
+    <param name="lsigma" value="0.075"/>
+    <param name="ogain" value="3.0"/>
+    <param name="lskip" value="0"/>
+    <param name="minimumScore" value="200"/>
+    <param name="srr" value="0.01"/>
+    <param name="srt" value="0.02"/>
+    <param name="str" value="0.01"/>
+    <param name="stt" value="0.02"/>
+    <param name="linearUpdate" value="0.5"/>
+    <param name="angularUpdate" value="0.436"/>
+    <param name="temporalUpdate" value="-1.0"/>
+    <param name="resampleThreshold" value="0.5"/>
+    <param name="particles" value="80"/>
+    <param name="xmin" value="-10.0"/>
+    <param name="ymin" value="-10.0"/>
+    <param name="xmax" value="10.0"/>
+    <param name="ymax" value="10.0"/>
+    <param name="delta" value="0.05"/>
+    <param name="llsamplerange" value="0.01"/>
+    <param name="llsamplestep" value="0.01"/>
+    <param name="lasamplerange" value="0.005"/>
+    <param name="lasamplestep" value="0.005"/>    
+  </node> -->
+
+</launch>

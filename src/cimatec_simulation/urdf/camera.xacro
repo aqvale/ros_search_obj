@@ -1,0 +1,62 @@
+<?xml version="1.0" ?>
+  <robot name="camera" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <gazebo reference="Camera">
+        <sensor name='camera' type='camera'>
+        <camera name='__default__'>
+         <horizontal_fov>1.047</horizontal_fov>
+         <image>
+           <width>1280</width>
+           <height>720</height>
+         </image>
+         <clip>
+           <near>0.1</near>
+           <far>100</far>
+         </clip>
+       </camera>
+        <plugin name="light_sensor_plugin" filename="/home/bir/Documents/workspaces_ros/Projetos/challengeBomb_ws/devel/lib/libgazebo_light_sensor_plugin.so">
+          <alwaysOn>true</alwaysOn>
+          <updateRate>10</updateRate>
+          <cameraName>diff/camera_top</cameraName>
+          <imageTopicName>image_raw</imageTopicName>
+          <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+          <frameName>Camera</frameName>
+          <hackBaseline>0.07</hackBaseline>
+          <distortionK1>0.0</distortionK1>
+          <distortionK2>0.0</distortionK2>
+          <distortionK3>0.0</distortionK3>
+          <distortionT1>0.0</distortionT1>
+          <distortionT2>0.0</distortionT2>
+        </plugin>
+      </sensor>
+    </gazebo>
+
+    <link name="base_camera">
+    </link>
+
+    <link name="Camera">
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://cimatec_simulation/meshes/camera.stl"/>
+        </geometry>
+      </visual>
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://cimatec_simulation/meshes/camera.stl"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <mass value="0.002"/>
+        <inertia ixx="1.397e-7" ixy="0" ixz="-2.070e-12" iyy="1.512e-7" iyz="1.844e-9" izz="7.943e-8"/>
+      </inertial>
+    </link>
+
+    <joint name="base_camera_to_Camera" type="fixed">
+      <parent link="base_camera"/>
+      <child link="Camera"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+    </joint>
+  </robot>
