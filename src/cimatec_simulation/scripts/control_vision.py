@@ -5,6 +5,7 @@ from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
+from actionlib_msgs.msg import GoalStatusArray
 
 from sensor_msgs.msg import CameraInfo
 
@@ -28,13 +29,8 @@ class ControlVision:
   flag_ajustment = False
   pub_move_to_goal = None
   msg_move_to_goal = None
+  move_base_info = None
   
-  old_x = 0
-  current_x = 0
-
-  old_y = 0
-  current_y
-
   def __init__ (self):
     rospy.loginfo("INIT CONTROL VISION")
     self.control_pid_x = ControlPid(5, -5, 0.01, 0, 0)
@@ -48,7 +44,8 @@ class ControlVision:
     rospy.Subscriber("/odometry/filtered", Odometry, self.callback_odometry)
     rospy.Subscriber("/rpy_angles", Vector3, self.callback_rpy_angles)
     rospy.Subscriber("/diff/camera_top/camera_info", CameraInfo, self.callback_camera_info)
-
+    rospy.Subscriber("move_base/status", GoalStatusArray, self.callback_move_base_info)
+    
   def publisher_move_to_goal(self, data):
     rospy.loginfo("Entrou no move base")
     factor_x = 1 if (self.rpy_angle.z <= 0 and self.rpy_angle.z >= -1.57) or self.rpy_angle.z >= 0 and self.rpy_angle.z <= 1.57 else -1
@@ -71,31 +68,24 @@ class ControlVision:
     self.pub_cmd_vel.publish(self.msg_twist)
     if round(self.msg_twist.angular.z, 2) == 0 and round(self.msg_twist.linear.x, 2) == 0:
       self.flag_ajustment = False
+      self.flag_orientation = True
 
   def callback(self, data):
     # msg ="\nx - " + str(self.odometry_data.pose.pose.position.x) + "\ny - " + str(self.odometry_data.pose.pose.position.y) + "\n" + str(data.y) + " - " + str((self.rpy_angle.z*180)/3.1415)
     # rospy.loginfo(msg)
-    if data.x != -1:
-      if not self.flag_move_to_goal and self.flag_orientation:
-        self.orientation_to_obj(data)
-      
-      if not self.flag_move_to_goal and self.flag_ajustment:
-        self.goal_ajustment(data)
+    import pdb; pdb.set_trace()
 
-      if not self.flag_move_to_goal and round(self.msg_twist.angular.z, 1) == 0 and not self.flag_ajustment:
-        self.flag_move_to_goal = True
+    if data.x != -1:
+      if self.move_base_info.status_list and self.move_base_info.status_list.status == 3 and self.flag_orientation:
+        self.orientation_to_obj(data)
+      elif self.move_base_info.status_list and self.move_base_info.status_list.status == 3 and self.flag_ajustment:
+        self.goal_ajustment(data)
+      elif self.move_base_info.status_list and self.move_base_info.status_list.status == 3 and round(self.msg_twist.angular.z, 1) == 0 and not self.flag_ajustment:
         self.flag_orientation = False
         self.publisher_move_to_goal(data)
-      
-      msg = str(round(self.msg_move_to_goal.pose.position.x)) + " - " + str(round(self.odometry_data.pose.pose.position.x))
-      rospy.loginfo(msg)
-      if self.flag_move_to_goal and (round(self.msg_move_to_goal.pose.position.x) == round(self.odometry_data.pose.pose.position.x) and \
-         round(self.msg_move_to_goal.pose.position.y) == round(self.odometry_data.pose.pose.position.y)) and \ 
-         :
-        self.flag_move_to_goal = False
+      elif self.move_base_info.status_list and self.move_base_info.status_list.status == 3:
         self.flag_ajustment = True
-        self.flag_orientation = True
-    self.d_x =  
+
   def callback_camera_info(self, data):
     self.camera_info = data
   
@@ -110,6 +100,9 @@ class ControlVision:
   
   def callback_rpy_angles(self, data):
     self.rpy_angle = data
+
+  def callback_move_base_info(self, data):
+    self.move_base_info = data
 
   def run(self):
     self.msg = rospy.Subscriber("/camera/obj/coordinates", Vector3, self.callback)
