@@ -14,8 +14,6 @@ from control_pid import ControlPid
 
 import math
 
-
-
 class ControlVision:
   control_pid_x = None
   control_pid_yaw = None
@@ -30,6 +28,12 @@ class ControlVision:
   flag_ajustment = False
   pub_move_to_goal = None
   msg_move_to_goal = None
+  
+  old_x = 0
+  current_x = 0
+
+  old_y = 0
+  current_y
 
   def __init__ (self):
     rospy.loginfo("INIT CONTROL VISION")
@@ -49,7 +53,7 @@ class ControlVision:
     rospy.loginfo("Entrou no move base")
     factor_x = 1 if (self.rpy_angle.z <= 0 and self.rpy_angle.z >= -1.57) or self.rpy_angle.z >= 0 and self.rpy_angle.z <= 1.57 else -1
     factor_y = 1 if self.rpy_angle.z >= 0 and self.rpy_angle.z <= 3.14 else -1
-    angle = self.rpy_angle.z * -1
+    angle = self.rpy_angle.z if self.rpy_angle.z >= 0 else -1
     self.msg_move_to_goal.pose.position.x = self.odometry_data.pose.pose.position.x + (data.y * math.cos(angle)) * factor_x
     self.msg_move_to_goal.pose.position.y = self.odometry_data.pose.pose.position.y + (data.y * math.sin(angle)) * factor_y
     self.msg_move_to_goal.header.frame_id = 'odom'
@@ -83,14 +87,15 @@ class ControlVision:
         self.flag_orientation = False
         self.publisher_move_to_goal(data)
       
-      # msg = str(round(self.msg_move_to_goal.pose.position.x)) + " - " + str(round(self.odometry_data.pose.pose.position.x))
-      # rospy.loginfo(msg)
+      msg = str(round(self.msg_move_to_goal.pose.position.x)) + " - " + str(round(self.odometry_data.pose.pose.position.x))
+      rospy.loginfo(msg)
       if self.flag_move_to_goal and (round(self.msg_move_to_goal.pose.position.x) == round(self.odometry_data.pose.pose.position.x) and \
-         round(self.msg_move_to_goal.pose.position.y) == round(self.odometry_data.pose.pose.position.y)):
+         round(self.msg_move_to_goal.pose.position.y) == round(self.odometry_data.pose.pose.position.y)) and \ 
+         :
         self.flag_move_to_goal = False
         self.flag_ajustment = True
         self.flag_orientation = True
-      
+    self.d_x =  
   def callback_camera_info(self, data):
     self.camera_info = data
   
