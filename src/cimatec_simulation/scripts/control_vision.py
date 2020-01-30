@@ -28,12 +28,6 @@ class ControlVision:
   flag_ajustment = False
   pub_move_to_goal = None
   msg_move_to_goal = None
-  
-  old_x = 0
-  current_x = 0
-
-  old_y = 0
-  current_y
 
   def __init__ (self):
     rospy.loginfo("INIT CONTROL VISION")
@@ -90,12 +84,11 @@ class ControlVision:
       msg = str(round(self.msg_move_to_goal.pose.position.x)) + " - " + str(round(self.odometry_data.pose.pose.position.x))
       rospy.loginfo(msg)
       if self.flag_move_to_goal and (round(self.msg_move_to_goal.pose.position.x) == round(self.odometry_data.pose.pose.position.x) and \
-         round(self.msg_move_to_goal.pose.position.y) == round(self.odometry_data.pose.pose.position.y)) and \ 
-         :
+         round(self.msg_move_to_goal.pose.position.y) == round(self.odometry_data.pose.pose.position.y)):
         self.flag_move_to_goal = False
         self.flag_ajustment = True
         self.flag_orientation = True
-    self.d_x =  
+
   def callback_camera_info(self, data):
     self.camera_info = data
   
