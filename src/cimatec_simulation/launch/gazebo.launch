@@ -29,11 +29,20 @@
   <arg name="laser_enabled" default="false"/>
   <arg name="kinect_enabled" default="false"/>
   <arg name="urdf_extras" default="$(find cimatec_simulation)/urdf/main.urdf.xacro"/>
+  <arg name="x" default="45.0"/>
+  <arg name="y" default="-2.0"/>
+  <arg name="z" default="0.0"/>
+  <arg name="yaw" default="3.1415"/>
 
-  <include file="$(find husky_gazebo)/launch/spawn_husky.launch">
+
+  <include file="$(find cimatec_simulation)/launch/spawn_husky.launch">
     <arg name="laser_enabled" value="$(arg laser_enabled)"/>
     <arg name="kinect_enabled" value="$(arg kinect_enabled)"/>
     <arg name="urdf_extras" default="$(arg urdf_extras)"/>
+    <arg name="x" default="$(arg x)"/>
+    <arg name="y" default="$(arg y)"/>
+    <arg name="z" default="$(arg z)"/>
+    <arg name="yaw" default="$(arg yaw)"/>
   </include>
 
   <include file="$(find husky_navigation)/launch/move_base.launch">
@@ -72,8 +81,8 @@
       base_frame: base_link
       map_frame: map
       map_update_interval: 0.5 # Publish new map
-      maxUrange: 110 # Should be just less than sensor range
-      maxRange: 140 # Should be just greater than sensor range
+      maxUrange: 20 # Should be just less than sensor range
+      maxRange: 60 # Should be just greater than sensor range
       particles: 100 # Increased from 80
       # Update frequencies
       linearUpdate: 0.3
@@ -102,7 +111,22 @@
     </rosparam>
   </node>
 
+  <!-- Exploretion -->
+  <node pkg="explore_lite" type="explore" respawn="false" name="explore" output="screen">
+    <param name="robot_base_frame" value="base_link"/>
+    <param name="costmap_topic" value="map"/>
+    <param name="costmap_updates_topic" value="map_updates"/>
+    <param name="visualize" value="true"/>
+    <param name="planner_frequency" value="0.33"/>
+    <param name="progress_timeout" value="30.0"/>
+    <param name="potential_scale" value="3.0"/>
+    <param name="orientation_scale" value="0.0"/>
+    <param name="gain_scale" value="1.0"/>
+    <param name="transform_tolerance" value="0.3"/>
+    <param name="min_frontier_size" value="10"/>
+  </node>
+
   <!-- RViz -->
-  <arg name="rviz" default="false"/>
-  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="$(anon rviz)" respawn="false" output="screen" args="-d $(find velodyne_description)/rviz/example.rviz" />
+  <arg name="rviz" default="true"/>
+  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="$(anon rviz)" respawn="false" output="screen" args="-d $(find cimatec_simulation)/rviz/config.rviz" />
 </launch>

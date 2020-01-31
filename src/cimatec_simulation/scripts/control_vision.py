@@ -35,6 +35,7 @@ class ControlVision:
   
   def __init__ (self):
     rospy.loginfo("INIT CONTROL VISION")
+    rospy.init_node("robot_vision", anonymous=True)
     self.control_pid_x = ControlPid(5, -5, 0.01, 0, 0)
     self.control_pid_yaw = ControlPid(3, -3, 0.001, 0, 0)
     self.pub_cmd_vel = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
@@ -42,7 +43,6 @@ class ControlVision:
     self.pub_quaternion = rospy.Publisher("/rotation_quaternion", Quaternion, queue_size=1)
     self.pub_move_to_goal = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
     self.msg_move_to_goal = PoseStamped()
-    rospy.init_node("robot_vision", anonymous=True)
     rospy.Subscriber("/odometry/filtered", Odometry, self.callback_odometry)
     rospy.Subscriber("/rpy_angles", Vector3, self.callback_rpy_angles)
     rospy.Subscriber("/diff/camera_top/camera_info", CameraInfo, self.callback_camera_info)
@@ -77,8 +77,6 @@ class ControlVision:
       self.flag_orientation = True
 
   def callback(self, data):
-    # msg ="\nx - " + str(self.odometry_data.pose.pose.position.x) + "\ny - " + str(self.odometry_data.pose.pose.position.y) + "\n" + str(data.y) + " - " + str((self.rpy_angle.z*180)/3.1415)
-    # rospy.loginfo(msg)
     if data.x != -1:
       if not self.move_base_info.status_list and self.flag_orientation:
         self.orientation_to_obj(data)
@@ -87,12 +85,9 @@ class ControlVision:
         self.flag_ajustment = True
         self.flag_move_to_goal = False
         self.flag_find = True
-      elif (self.move_base_info.status_list and (self.move_base_info.status_list[0].status == 2 or self.move_base_info.status_list[0].status == 3)) and self.flag_ajustment:
-        rospy.loginfo("AJUSTE FINO")
+      elif (self.move_base_info.status_list and self.move_base_info.status_list[0].status != 1) and self.flag_ajustment:
         self.goal_ajustment(data)
 
-      # mg = str(self.move_base_info.status_list[0].status) if self.move_base_info.status_list else "Nada"
-      # rospy.loginfo(mg + " " + str(data.y))
       if (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and data.y <= 4:
         rospy.Publisher('/move_base/cancel', GoalID, queue_size=1).publish(GoalID())
       
