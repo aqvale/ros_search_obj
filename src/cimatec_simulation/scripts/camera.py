@@ -13,7 +13,7 @@ from collections import deque
 from cv_bridge import CvBridge, CvBridgeError
 
 class Camera:
-  yellow_range = [(0, 100, 100), (32, 255, 255)]
+  yellow_range = [(20, 100, 100), (32, 255, 255)]
   focalLength = 937.8194580078125
 
   def __init__(self):
@@ -46,7 +46,8 @@ class Camera:
       aux1, aux2 = cv2.minEnclosingCircle(contours_poly[index])
       centers.append(aux1)
       radius.append(aux2)
-      if(len(contours_poly[index]) > 10):
+      rospy.loginfo(len(contours_poly[index]))
+      if(len(contours_poly[index]) >= 9):
         coordinates = self.obj_coordinate(cnt_yellow)
         coordinates[1] = self.distance_to_camera(coordinates[2])
         cv2.circle(img_rgb, (int(centers[index][0]), int(centers[index][1])), int(radius[index]), (255, 255, 0), 2)

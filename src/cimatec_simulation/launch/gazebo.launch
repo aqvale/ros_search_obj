@@ -6,7 +6,7 @@
   
   <!-- Import files .py -->
   <node pkg="cimatec_simulation" name="opencv_camera" type="camera.py" output="screen" />
-  <!-- <node pkg="cimatec_simulation" name="robot_vision" type="control_vision.py" output="screen" /> -->
+  <node pkg="cimatec_simulation" name="robot_vision" type="control_vision.py" output="screen" />
   <!-- <node pkg="cimatec_simulation" name="robot_vision" type="control_vision.py" output="screen">
     <param name="sat_max" value="6.0"/>
     <param name="sat_min" value="6.0"/>

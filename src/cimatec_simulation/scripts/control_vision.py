@@ -12,6 +12,7 @@ from nav2d_navigator.msg import ExploreActionGoal
 
 from actionlib_msgs.msg import GoalStatusArray
 from actionlib_msgs.msg import GoalID
+from actionlib_msgs.msg import GoalStatusArray
 
 from sensor_msgs.msg import CameraInfo
 
@@ -20,6 +21,8 @@ import time
 from control_pid import ControlPid
 
 import math
+
+import os
 
 class ControlVision:
   control_pid_x = None
@@ -40,7 +43,10 @@ class ControlVision:
   move_base_info = None
 
   pub_first_map_goal = None
+
   pub_explore_goal = None
+  status_explore_goal = None
+  flag = True
   
   def __init__ (self):
     rospy.loginfo("INIT CONTROL VISION")
@@ -57,25 +63,47 @@ class ControlVision:
     rospy.Subscriber("/rpy_angles", Vector3, self.callback_rpy_angles)
     rospy.Subscriber("/diff/camera_top/camera_info", CameraInfo, self.callback_camera_info)
     rospy.Subscriber("/move_base/status", GoalStatusArray, self.callback_move_base_info)
+    rospy.Subscriber("/Explore/status", GoalStatusArray, self.callback_explore_status)
     
     self.pub_first_map_goal = rospy.Publisher("/GetFirstMap/goal", GetFirstMapActionGoal, queue_size=1)
+    cancel_first_map = rospy.Publisher("/GetFirstMap/cancel", GoalID, queue_size=1)
     self.pub_explore_goal = rospy.Publisher("/Explore/goal", ExploreActionGoal, queue_size=1)
     time.sleep(1)
     self.pub_first_map_goal.publish()
+    time.sleep(1)
+    cancel_first_map.publish(GoalID())
 
     # rospy.Publisher("/GetFirstMap/cancel", GoalID, queue_size=1).publish()
     
-  def publisher_move_to_goal(self, data):
-    rospy.loginfo("Entrou no move base")
-    factor_x = 1 if (self.rpy_angle.z <= 0 and self.rpy_angle.z >= -1.57) or self.rpy_angle.z >= 0 and self.rpy_angle.z <= 1.57 else -1
-    factor_y = 1 if self.rpy_angle.z >= 0 and self.rpy_angle.z <= 3.14 else -1
-    angle = self.rpy_angle.z if self.rpy_angle.z >= 0 else self.rpy_angle.z * -1
-    self.msg_move_to_goal.pose.position.x = self.odometry_data.pose.pose.position.x + (data.y * math.cos(angle)) * factor_x
-    self.msg_move_to_goal.pose.position.y = self.odometry_data.pose.pose.position.y + (data.y * math.sin(angle)) * factor_y
-    self.msg_move_to_goal.header.frame_id = 'odom'
-    self.msg_move_to_goal.pose.orientation.z = self.odometry_data.pose.pose.orientation.z
-    self.msg_move_to_goal.pose.orientation.w = self.odometry_data.pose.pose.orientation.w
-    self.pub_move_to_goal.publish(self.msg_move_to_goal)
+  # def publisher_move_to_goal(self, data):
+  #   rospy.loginfo("Entrou no move base")
+  #   factor_x = 1 if (self.rpy_angle.z <= 0 and self.rpy_angle.z >= -1.57) or self.rpy_angle.z >= 0 and self.rpy_angle.z <= 1.57 else -1
+  #   factor_y = 1 if self.rpy_angle.z >= 0 and self.rpy_angle.z <= 3.14 else -1
+  #   angle = self.rpy_angle.z if self.rpy_angle.z >= 0 else self.rpy_angle.z * -1
+  #   self.msg_move_to_goal.pose.position.x = self.odometry_data.pose.pose.position.x + (data.y * math.cos(angle)) * factor_x
+  #   self.msg_move_to_goal.pose.position.y = self.odometry_data.pose.pose.position.y + (data.y * math.sin(angle)) * factor_y
+  #   self.msg_move_to_goal.header.frame_id = 'odom'
+  #   self.msg_move_to_goal.pose.orientation.z = self.odometry_data.pose.pose.orientation.z
+  #   self.msg_move_to_goal.pose.orientation.w = self.odometry_data.pose.pose.orientation.w
+  #   self.pub_move_to_goal.publish(self.msg_move_to_goal)
+
+  def goal_move_base(self, center_ball, radius):
+    distance = (1 * 937.8194580078125) / (radius * 2)
+    y_move_base = -(center_ball - self.camera_info.width/2) / (radius*2) 
+    if abs(y_move_base) < 0.006:
+      x_move_base = distance
+    else:
+      x_move_base = math.sqrt(distance**2 - y_move_base**2)
+    self.msg_move_to_goal.pose.position.x = x_move_base
+    self.msg_move_to_goal.pose.position.y = y_move_base
+    self.msg_move_to_goal.pose.orientation.w = 1
+    self.msg_move_to_goal.header.frame_id = self.camera_info.header.frame_id
+    if self.flag:
+      self.pub_move_to_goal.publish(self.msg_move_to_goal)
+      self.flag = False
+      self.timer_flag = time.time()
+    if time.time() - self.timer_flag > 5:
+      self.flag = True      
 
   def orientation_to_obj(self, data):
     self.msg_twist.angular.z = self.control_pid_yaw.pid_calculate(0.5, self.camera_info.width/2, int(data.x))
@@ -92,37 +120,50 @@ class ControlVision:
     if round(self.msg_twist.angular.z, 1) == 0 and round(self.msg_twist.linear.x, 1) == 0:
       self.flag_ajustment = False
       self.flag_orientation = True
+      rospy.loginfo("Find the ball!")
 
   def callback(self, data):
     if data.x != -1:
-      if self.flag_explore:
-        rospy.Publisher("/Explore/cancel", GoalID, queue_size=1).publish()
+      self.flag_find = True
+      if self.status_explore_goal == 1:
+        rospy.loginfo("CANCELOU")
+        rospy.Publisher("/Explore/cancel", GoalID, queue_size=1).publish(GoalID())
+        # os.system("rosnode kill /Operator")
+        self.flag_explore = False
 
-      if not self.move_base_info.status_list and self.flag_orientation:
-        self.orientation_to_obj(data)
-      elif self.flag_move_to_goal:
-        self.publisher_move_to_goal(data)
-        self.flag_move_to_goal = False
-        self.flag_ajustment = True
-        self.flag_find = True
-      elif (self.move_base_info.status_list and self.move_base_info.status_list[0].status != 1) and self.flag_ajustment:
-        self.goal_ajustment(data)
+      if self.status_explore_goal != 1:
+        # if not self.move_base_info.status_list and self.flag_orientation:
+        #   rospy.loginfo("entrou no Orientation")
+        #   self.orientation_to_obj(data)
+        # elif self.flag_move_to_goal:
+        #   rospy.loginfo("entrou no MOVIE")
+        #   self.publisher_move_to_goal(data)
+        #   self.flag_move_to_goal = False
+        #   self.flag_ajustment = True
+        # elif (self.move_base_info.status_list and self.move_base_info.status_list[0].status != 1) and self.flag_ajustment:
+        #   self.goal_ajustment(data)
+        if not self.flag_move_to_goal:
+          self.flag_move_to_goal = True
+          self.goal_move_base(data.x, data.z)
 
-      if (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and data.y <= 4:
-        rospy.Publisher('/move_base/cancel', GoalID, queue_size=1).publish(GoalID())
+        if (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and data.y <= 4:
+          rospy.Publisher('/move_base/cancel', GoalID, queue_size=1).publish(GoalID())
   
     else:
-      if not self.flag_find and not self.flag_explore:
-        rospy.loginfo("Aguardando...")
-        time.sleep(15)
+      # if self.flag_find and not self.move_base_info.status_list:
+      #   rospy.loginfo("Rotacionando")
+      #   self.msg_twist = Twist()
+      #   time.sleep(1)
+      #   self.msg_twist.angular.z = 0.1
+      #   self.pub_cmd_vel.publish(self.msg_twist.angular.z)
+      # else:
+      if not self.flag_find and not self.flag_explore and self.status_explore_goal != 1:
+        rospy.loginfo("AGUARDANDO..")
+        time.sleep(5)
         self.pub_explore_goal.publish(ExploreActionGoal())
         rospy.loginfo("INICIOU O EXPLORE")
-
         self.flag_explore = True
 
-      # if self.flag_find and (self.move_base_info.status_list and self.move_base_info.status_list[0].status != 1):
-      #   self.msg_twist.angular.z = 0.5
-      #   self.pub_cmd_vel.publish(self.msg_twist.angular.z)
 
   def callback_camera_info(self, data):
     self.camera_info = data
@@ -141,6 +182,10 @@ class ControlVision:
 
   def callback_move_base_info(self, data):
     self.move_base_info = data
+
+  def callback_explore_status(self, data):
+    if data.status_list:
+      self.status_explore_goal = data.status_list[0].status
 
   def run(self):
     self.msg = rospy.Subscriber("/camera/obj/coordinates", Vector3, self.callback)
