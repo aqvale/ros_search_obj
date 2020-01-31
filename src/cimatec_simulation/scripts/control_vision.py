@@ -82,8 +82,8 @@ class ControlVision:
         self.orientation_to_obj(data)
       elif self.flag_move_to_goal:
         self.publisher_move_to_goal(data)
-        self.flag_ajustment = True
         self.flag_move_to_goal = False
+        self.flag_ajustment = True
         self.flag_find = True
       elif (self.move_base_info.status_list and self.move_base_info.status_list[0].status != 1) and self.flag_ajustment:
         self.goal_ajustment(data)
