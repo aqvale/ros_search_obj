@@ -112,7 +112,7 @@
   </node>
 
   <!-- Exploretion -->
-  <node pkg="explore_lite" type="explore" respawn="false" name="explore" output="screen">
+  <!-- <node pkg="explore_lite" type="explore" respawn="false" name="explore" output="screen">
     <param name="robot_base_frame" value="base_link"/>
     <param name="costmap_topic" value="map"/>
     <param name="costmap_updates_topic" value="map_updates"/>
@@ -124,7 +124,7 @@
     <param name="gain_scale" value="1.0"/>
     <param name="transform_tolerance" value="0.3"/>
     <param name="min_frontier_size" value="10"/>
-  </node>
+  </node> -->
 
   <!-- RViz -->
   <arg name="rviz" default="true"/>

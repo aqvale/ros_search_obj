@@ -4,6 +4,7 @@ from geometry_msgs.msg import Vector3
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import PoseStamped
+from move_base_msgs.msg import MoveBaseActionGoal
 from nav_msgs.msg import Odometry
 from actionlib_msgs.msg import GoalStatusArray
 from actionlib_msgs.msg import GoalID
@@ -41,8 +42,8 @@ class ControlVision:
     self.pub_cmd_vel = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
     self.msg_twist = Twist()
     self.pub_quaternion = rospy.Publisher("/rotation_quaternion", Quaternion, queue_size=1)
-    self.pub_move_to_goal = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
-    self.msg_move_to_goal = PoseStamped()
+    self.pub_move_to_goal = rospy.Publisher("/move_base/goal", MoveBaseActionGoal, queue_size=1)
+    self.msg_move_to_goal = MoveBaseActionGoal()
     rospy.Subscriber("/odometry/filtered", Odometry, self.callback_odometry)
     rospy.Subscriber("/rpy_angles", Vector3, self.callback_rpy_angles)
     rospy.Subscriber("/diff/camera_top/camera_info", CameraInfo, self.callback_camera_info)
@@ -53,11 +54,11 @@ class ControlVision:
     factor_x = 1 if (self.rpy_angle.z <= 0 and self.rpy_angle.z >= -1.57) or self.rpy_angle.z >= 0 and self.rpy_angle.z <= 1.57 else -1
     factor_y = 1 if self.rpy_angle.z >= 0 and self.rpy_angle.z <= 3.14 else -1
     angle = self.rpy_angle.z if self.rpy_angle.z >= 0 else self.rpy_angle.z * -1
-    self.msg_move_to_goal.pose.position.x = self.odometry_data.pose.pose.position.x + (data.y * math.cos(angle)) * factor_x
-    self.msg_move_to_goal.pose.position.y = self.odometry_data.pose.pose.position.y + (data.y * math.sin(angle)) * factor_y
-    self.msg_move_to_goal.header.frame_id = 'odom'
-    self.msg_move_to_goal.pose.orientation.z = self.odometry_data.pose.pose.orientation.z
-    self.msg_move_to_goal.pose.orientation.w = self.odometry_data.pose.pose.orientation.w
+    self.msg_move_to_goal.goal.target_pose.pose.position.x = self.odometry_data.pose.pose.position.x + (data.y * math.cos(angle)) * factor_x
+    self.msg_move_to_goal.goal.target_pose.pose.position.y = self.odometry_data.pose.pose.position.y + (data.y * math.sin(angle)) * factor_y
+    self.msg_move_to_goal.goal.target_pose.header.frame_id = 'odom'
+    self.msg_move_to_goal.goal.target_pose.pose.orientation.z = self.odometry_data.pose.pose.orientation.z
+    self.msg_move_to_goal.goal.target_pose.pose.orientation.w = self.odometry_data.pose.pose.orientation.w
     self.pub_move_to_goal.publish(self.msg_move_to_goal)
 
   def orientation_to_obj(self, data):
