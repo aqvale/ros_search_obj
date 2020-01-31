@@ -4,7 +4,12 @@ from geometry_msgs.msg import Vector3
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import PoseStamped
+
 from nav_msgs.msg import Odometry
+
+from nav2d_navigator.msg import GetFirstMapActionGoal
+from nav2d_navigator.msg import ExploreActionGoal
+
 from actionlib_msgs.msg import GoalStatusArray
 from actionlib_msgs.msg import GoalID
 
@@ -29,9 +34,13 @@ class ControlVision:
   flag_orientation = True
   flag_ajustment = False
   flag_find = False
+  flag_explore = False
   pub_move_to_goal = None
   msg_move_to_goal = None
   move_base_info = None
+
+  pub_first_map_goal = None
+  pub_explore_goal = None
   
   def __init__ (self):
     rospy.loginfo("INIT CONTROL VISION")
@@ -43,10 +52,18 @@ class ControlVision:
     self.pub_quaternion = rospy.Publisher("/rotation_quaternion", Quaternion, queue_size=1)
     self.pub_move_to_goal = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
     self.msg_move_to_goal = PoseStamped()
+    
     rospy.Subscriber("/odometry/filtered", Odometry, self.callback_odometry)
     rospy.Subscriber("/rpy_angles", Vector3, self.callback_rpy_angles)
     rospy.Subscriber("/diff/camera_top/camera_info", CameraInfo, self.callback_camera_info)
-    rospy.Subscriber("move_base/status", GoalStatusArray, self.callback_move_base_info)
+    rospy.Subscriber("/move_base/status", GoalStatusArray, self.callback_move_base_info)
+    
+    self.pub_first_map_goal = rospy.Publisher("/GetFirstMap/goal", GetFirstMapActionGoal, queue_size=1)
+    self.pub_explore_goal = rospy.Publisher("/Explore/goal", ExploreActionGoal, queue_size=1)
+    time.sleep(1)
+    self.pub_first_map_goal.publish()
+
+    # rospy.Publisher("/GetFirstMap/cancel", GoalID, queue_size=1).publish()
     
   def publisher_move_to_goal(self, data):
     rospy.loginfo("Entrou no move base")
@@ -78,6 +95,9 @@ class ControlVision:
 
   def callback(self, data):
     if data.x != -1:
+      if self.flag_explore:
+        rospy.Publisher("/Explore/cancel", GoalID, queue_size=1).publish()
+
       if not self.move_base_info.status_list and self.flag_orientation:
         self.orientation_to_obj(data)
       elif self.flag_move_to_goal:
@@ -90,11 +110,19 @@ class ControlVision:
 
       if (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and data.y <= 4:
         rospy.Publisher('/move_base/cancel', GoalID, queue_size=1).publish(GoalID())
-      
+  
     else:
-      if self.flag_find and (self.move_base_info.status_list and self.move_base_info.status_list[0].status != 1):
-        self.msg_twist.angular.z = 0.5
-        self.pub_cmd_vel.publish(self.msg_twist.angular.z)
+      if not self.flag_find and not self.flag_explore:
+        rospy.loginfo("Aguardando...")
+        time.sleep(15)
+        self.pub_explore_goal.publish(ExploreActionGoal())
+        rospy.loginfo("INICIOU O EXPLORE")
+
+        self.flag_explore = True
+
+      # if self.flag_find and (self.move_base_info.status_list and self.move_base_info.status_list[0].status != 1):
+      #   self.msg_twist.angular.z = 0.5
+      #   self.pub_cmd_vel.publish(self.msg_twist.angular.z)
 
   def callback_camera_info(self, data):
     self.camera_info = data
