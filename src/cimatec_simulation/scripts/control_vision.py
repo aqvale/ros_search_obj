@@ -47,6 +47,7 @@ class ControlVision:
   pub_explore_goal = None
   status_explore_goal = None
   flag = True
+  time_old = None
   
   def __init__ (self):
     rospy.loginfo("INIT CONTROL VISION")
@@ -87,23 +88,17 @@ class ControlVision:
   #   self.msg_move_to_goal.pose.orientation.w = self.odometry_data.pose.pose.orientation.w
   #   self.pub_move_to_goal.publish(self.msg_move_to_goal)
 
-  def goal_move_base(self, center_ball, radius):
-    distance = (1 * 937.8194580078125) / (radius * 2)
-    y_move_base = -(center_ball - self.camera_info.width/2) / (radius*2) 
-    if abs(y_move_base) < 0.006:
-      x_move_base = distance
-    else:
-      x_move_base = math.sqrt(distance**2 - y_move_base**2)
-    self.msg_move_to_goal.pose.position.x = x_move_base
-    self.msg_move_to_goal.pose.position.y = y_move_base
-    self.msg_move_to_goal.pose.orientation.w = 1
-    self.msg_move_to_goal.header.frame_id = self.camera_info.header.frame_id
-    if self.flag:
+  def move_goal_to_object(self, position_x, radius):
+    if not self.time_old or (self.time_old and time.time() - self.time_old > 10):
+      distance = (1 * 937.8194580078125) / (radius * 2)
+      y_move_base = -(position_x - self.camera_info.width/2) / (radius*2) 
+      x_move_base = distance if abs(y_move_base) < 0.006 else math.sqrt(distance**2 - y_move_base**2)
+      self.msg_move_to_goal.pose.position.x = x_move_base
+      self.msg_move_to_goal.pose.position.y = y_move_base
+      self.msg_move_to_goal.pose.orientation.w = 1
+      self.msg_move_to_goal.header.frame_id = self.camera_info.header.frame_id
       self.pub_move_to_goal.publish(self.msg_move_to_goal)
-      self.flag = False
-      self.timer_flag = time.time()
-    if time.time() - self.timer_flag > 5:
-      self.flag = True      
+      self.time_old = time.time()
 
   def orientation_to_obj(self, data):
     self.msg_twist.angular.z = self.control_pid_yaw.pid_calculate(0.5, self.camera_info.width/2, int(data.x))
@@ -125,13 +120,16 @@ class ControlVision:
   def callback(self, data):
     if data.x != -1:
       self.flag_find = True
-      if self.status_explore_goal == 1:
+      self.move_goal_to_object(data.x, data.z)
+
+      if self.flag_explore and self.status_explore_goal == 1:
         rospy.loginfo("CANCELOU")
         rospy.Publisher("/Explore/cancel", GoalID, queue_size=1).publish(GoalID())
-        # os.system("rosnode kill /Operator")
+        time.sleep(5)
+        os.system("rosnode kill /Operator")
         self.flag_explore = False
 
-      if self.status_explore_goal != 1:
+      # if self.status_explore_goal != 1:
         # if not self.move_base_info.status_list and self.flag_orientation:
         #   rospy.loginfo("entrou no Orientation")
         #   self.orientation_to_obj(data)
@@ -142,12 +140,13 @@ class ControlVision:
         #   self.flag_ajustment = True
         # elif (self.move_base_info.status_list and self.move_base_info.status_list[0].status != 1) and self.flag_ajustment:
         #   self.goal_ajustment(data)
-        if not self.flag_move_to_goal:
-          self.flag_move_to_goal = True
-          self.goal_move_base(data.x, data.z)
+        # if not self.flag_move_to_goal:
+        #   self.flag_move_to_goal = True
+        #   self.goal_move_base(data.x, data.z)
 
-        if (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and data.y <= 4:
-          rospy.Publisher('/move_base/cancel', GoalID, queue_size=1).publish(GoalID())
+      # if (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and data.y <= 4:
+      #   rospy.Publisher('/move_base/cancel', GoalID, queue_size=1).publish(GoalID())
+      #   rospy.loginfo("CHEGUEI NA BOLA")
   
     else:
       # if self.flag_find and not self.move_base_info.status_list:
