@@ -46,7 +46,6 @@ class Camera:
       aux1, aux2 = cv2.minEnclosingCircle(contours_poly[index])
       centers.append(aux1)
       radius.append(aux2)
-      rospy.loginfo(len(contours_poly[index]))
       if(len(contours_poly[index]) >= 9):
         coordinates = self.obj_coordinate(cnt_yellow)
         coordinates[1] = self.distance_to_camera(coordinates[2])
