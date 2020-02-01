@@ -1,21 +1,14 @@
 <?xml version="1.0"?>
 <launch>
 
-  <!-- <include file="$(find cimatec_map)/launch/gazebo.launch">
-  </include> -->
+  <include file="$(find cimatec_map)/launch/gazebo.launch">
+  </include>
   
   <!-- Import files .py -->
   <node pkg="cimatec_simulation" name="opencv_camera" type="camera.py" output="screen" />
-  <node pkg="cimatec_simulation" name="robot_vision" type="control_vision.py" output="screen" />
-  <!-- <node pkg="cimatec_simulation" name="robot_vision" type="control_vision.py" output="screen">
-    <param name="sat_max" value="6.0"/>
-    <param name="sat_min" value="6.0"/>
-    <param name="kp" value="6.0"/>
-    <param name="ki" value="6.0"/>
-    <param name="kd" value="6.0"/>
-  </node> -->
+  <node pkg="cimatec_simulation" name="robot_vision" type="robot.py" output="screen" />
   
-  <arg name="world_name" default="$(find cimatec_simulation)/worlds/cimatec_world.world"/>
+  <!-- <arg name="world_name" default="$(find cimatec_simulation)/worlds/cimatec_world.world"/>
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(arg world_name)"/> 
     <arg name="paused" value="false"/>
@@ -23,7 +16,7 @@
     <arg name="gui" value="true"/>
     <arg name="headless" value="false"/>
     <arg name="debug" value="false"/>
-  </include>
+  </include> -->
 
   <!-- Husky -->
   <arg name="laser_enabled" default="false"/>
@@ -33,7 +26,6 @@
   <arg name="y" default="-2.0"/>
   <arg name="z" default="0.0"/>
   <arg name="yaw" default="3.1415"/>
-
 
   <include file="$(find cimatec_simulation)/launch/spawn_husky.launch">
     <arg name="laser_enabled" value="$(arg laser_enabled)"/>

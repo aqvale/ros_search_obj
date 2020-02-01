@@ -18,13 +18,15 @@ class Camera:
   def __init__(self):
     rospy.init_node('opencv_camera', anonymous=True)
     self.pub = rospy.Publisher('camera/obj/coordinates', Vector3, queue_size=1)
-
+    self.pub_image = rospy.Publisher('/camera/mission', Image, queue_size=1)
     self.bridge = CvBridge()
     rospy.loginfo("Init Camera!")
 
   def show_image(self, img):
     cv2.namedWindow("Image Window", 1)
     cv2.imshow("Image Window", img)
+    img_pub = self.bridge.cv2_to_imgmsg(img, "bgr8")
+    self.pub_image.publish(img_pub)
     cv2.waitKey(3)
   
   def object_color_detector(self, cv_image):

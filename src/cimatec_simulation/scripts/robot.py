@@ -27,6 +27,7 @@ class Robot:
   move_base_info = None
   status_explore_goal = None
   time_old = None
+  time_start = None
   
   def __init__ (self):
     rospy.loginfo("INIT CONTROL VISION")
@@ -35,8 +36,9 @@ class Robot:
     self.control_pid_yaw = ControlPid(3, -3, 0.001, 0, 0)
     self.flag_find = False
     self.flag_explore = False
+    self.stop = False
+    self.time_start = time.time()
     
-    rospy.Subscriber("/camera/obj/coordinates", Vector3, self.callback)
     rospy.Subscriber("/diff/camera_top/camera_info", CameraInfo, self.callback_camera_info)
     rospy.Subscriber("/move_base/status", GoalStatusArray, self.callback_move_base_info)
     rospy.Subscriber("/Explore/status", GoalStatusArray, self.callback_explore_status)
@@ -52,8 +54,29 @@ class Robot:
     time.sleep(1)
     cancel_first_map.publish(GoalID())
 
-  def callback(self, data):
-    self.obj_coordinates = data
+  def callback_main(self, data):
+    if not self.stop:
+      if data.x != -1:
+        self.flag_find = True
+        if (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and data.y <= 4:
+          rospy.Publisher('/move_base/cancel', GoalID, queue_size=1).publish(GoalID())
+          self.goal_ajustment(data)
+        else:
+          self.move_goal_to_object(data.x, data.z)
+
+        if self.flag_explore and self.status_explore_goal == 1:
+          rospy.loginfo("Stop Explore and kill Operator")
+          rospy.Publisher("/Explore/cancel", GoalID, queue_size=1).publish(GoalID())
+          os.system("rosnode kill /Operator")
+          time.sleep(5)
+          self.flag_explore = False
+      else:
+        if not self.flag_find and not self.flag_explore and self.status_explore_goal != 1:
+          rospy.loginfo("Wait..")
+          time.sleep(5)
+          self.pub_explore_goal.publish(ExploreActionGoal())
+          rospy.loginfo("Start Explore")
+          self.flag_explore = True
 
   def callback_camera_info(self, data):
     self.camera_info = data
@@ -65,11 +88,11 @@ class Robot:
     if data.status_list:
       self.status_explore_goal = data.status_list[0].status
 
-  def move_goal_to_object(self):
+  def move_goal_to_object(self, position_x, radius):
     msg_move_to_goal = PoseStamped()
     if not self.time_old or (self.time_old and time.time() - self.time_old > 10):
-      distance = (1 * constant.FOCAL_LENGHT) / (self.obj_coordinates.z * 2)
-      y_move_base = -(self.obj_coordinates.x - self.camera_info.width/2) / (self.obj_coordinates.z*2) 
+      distance = (1 * constant.FOCAL_LENGHT) / (radius * 2)
+      y_move_base = -(position_x - self.camera_info.width/2) / (radius*2) 
       x_move_base = distance if abs(y_move_base) < 0.006 else math.sqrt(distance**2 - y_move_base**2)
       msg_move_to_goal.pose.position.x = x_move_base
       msg_move_to_goal.pose.position.y = y_move_base
@@ -78,43 +101,22 @@ class Robot:
       self.pub_move_to_goal.publish(msg_move_to_goal)
       self.time_old = time.time()
 
-  def goal_ajustment(self):
+  def goal_ajustment(self, data):
     msg_twist = Twist()
     while round(msg_twist.angular.z, 1) != 0 and round(msg_twist.linear.x, 1) != 0:
-      msg_twist.angular.z = self.control_pid_yaw.pid_calculate(0.5, self.camera_info.width/2, int(self.obj_coordinates.x))
-      msg_twist.linear.x = self.control_pid_x.pid_calculate(0.5, 180, int(self.obj_coordinates.z))
+      msg_twist.angular.z = self.control_pid_yaw.pid_calculate(0.5, self.camera_info.width/2, int(data.x))
+      msg_twist.linear.x = self.control_pid_x.pid_calculate(0.5, 180, int(data.z))
       self.pub_cmd_vel.publish(msg_twist)
     rospy.loginfo("Find the ball!")
-    rospy.loginfo(time.ctime())
-    exit
+    rospy.loginfo(time.time() - self.time_start)
+    self.stop = True
 
   def run(self):
-    if self.obj_coordinates.x != -1:
-      self.flag_find = True
-      if (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and self.obj_coordinates.y <= 4:
-        rospy.Publisher('/move_base/cancel', GoalID, queue_size=1).publish(GoalID())
-        self.goal_ajustment()
-      else:
-        self.move_goal_to_object()
-
-      if self.flag_explore and self.status_explore_goal == 1:
-        rospy.loginfo("Stop Explore and kill Operator")
-        rospy.Publisher("/Explore/cancel", GoalID, queue_size=1).publish(GoalID())
-        os.system("rosnode kill /Operator")
-        time.sleep(5)
-        self.flag_explore = False
-    else:
-      if not self.flag_find and not self.flag_explore and self.status_explore_goal != 1:
-        rospy.loginfo("Wait..")
-        time.sleep(5)
-        self.pub_explore_goal.publish(ExploreActionGoal())
-        rospy.loginfo("Start Explore")
-        self.flag_explore = True
+    rospy.Subscriber("/camera/obj/coordinates", Vector3, self.callback_main)
 
 if __name__ == "__main__":
   rospy.loginfo("Init Control")
   ctrl_vision = Robot()
-  time.sleep(2)
+  ctrl_vision.run()
   while not rospy.is_shutdown():
-    ctrl_vision.run()
     rospy.spin()    
