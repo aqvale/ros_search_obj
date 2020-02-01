@@ -3,9 +3,9 @@
 import rospy
 import cv2
 import argparse
-# import imutils
 import sys
 import numpy as np
+import constant
 
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Vector3
@@ -13,19 +13,20 @@ from collections import deque
 from cv_bridge import CvBridge, CvBridgeError
 
 class Camera:
-  yellow_range = [(25, 50, 50), (32, 255, 255)]
-  focalLength = 937.8194580078125
+  yellow_range = [(20, 100, 100), (32, 255, 255)]
 
   def __init__(self):
     rospy.init_node('opencv_camera', anonymous=True)
     self.pub = rospy.Publisher('camera/obj/coordinates', Vector3, queue_size=1)
-
+    self.pub_image = rospy.Publisher('/camera/mission', Image, queue_size=1)
     self.bridge = CvBridge()
     rospy.loginfo("Init Camera!")
 
   def show_image(self, img):
     cv2.namedWindow("Image Window", 1)
     cv2.imshow("Image Window", img)
+    img_pub = self.bridge.cv2_to_imgmsg(img, "bgr8")
+    self.pub_image.publish(img_pub)
     cv2.waitKey(3)
   
   def object_color_detector(self, cv_image):
@@ -46,14 +47,12 @@ class Camera:
       aux1, aux2 = cv2.minEnclosingCircle(contours_poly[index])
       centers.append(aux1)
       radius.append(aux2)
-      if(len(contours_poly[index]) > 7):
+      if(len(contours_poly[index]) >= 9):
         coordinates = self.obj_coordinate(cnt_yellow)
         coordinates[1] = self.distance_to_camera(coordinates[2])
         cv2.circle(img_rgb, (int(centers[index][0]), int(centers[index][1])), int(radius[index]), (255, 255, 0), 2)
 
     self.pub.publish(coordinates[0], coordinates[1], coordinates[2])
-    # rospy.loginfo("coordinates - " + str(coordinates))
-
     return img_rgb
 
   def obj_coordinate(self, cnts):
@@ -64,7 +63,7 @@ class Camera:
   
   def distance_to_camera(self, radius):
     # compute and return the distance from the maker to the camera
-  	return (1 * self.focalLength) / (radius * 2)
+  	return (1 * constant.FOCAL_LENGHT) / (radius * 2)
 
   def image_callback(self, img_msg):
     try:
