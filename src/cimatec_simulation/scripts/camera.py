@@ -3,7 +3,6 @@
 import rospy
 import cv2
 import argparse
-# import imutils
 import sys
 import numpy as np
 
@@ -11,6 +10,7 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import Vector3
 from collections import deque
 from cv_bridge import CvBridge, CvBridgeError
+
 
 class Camera:
   yellow_range = [(25, 50, 50), (32, 255, 255)]
@@ -52,8 +52,6 @@ class Camera:
         cv2.circle(img_rgb, (int(centers[index][0]), int(centers[index][1])), int(radius[index]), (255, 255, 0), 2)
 
     self.pub.publish(coordinates[0], coordinates[1], coordinates[2])
-    # rospy.loginfo("coordinates - " + str(coordinates))
-
     return img_rgb
 
   def obj_coordinate(self, cnts):
@@ -62,9 +60,10 @@ class Camera:
     M = cv2.moments(c)
     return [int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]), radius]
   
+  # compute and return the distance from the maker to the camera
   def distance_to_camera(self, radius):
-    # compute and return the distance from the maker to the camera
   	return (1 * self.focalLength) / (radius * 2)
+
 
   def image_callback(self, img_msg):
     try:
