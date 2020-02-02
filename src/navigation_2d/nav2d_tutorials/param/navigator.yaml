@@ -1,0 +1,29 @@
+# Frequency (Hz) in which to generate new commands
+frequency: 10.0
+
+# Inflation params used for path planning
+map_inflation_radius: 1.0
+robot_radius: 0.5
+
+# Distance to set the command target in front of the robot
+command_target_distance: 1.0
+
+# Tolerance in target position for MoveToPosition2D (meter)
+navigation_goal_distance: 1.0
+
+# Toleranvce in target heading for MoveToPosition2D (radians)
+navigation_goal_angle: 3.54
+
+# Distance at which to turn off obstacle avoidance (meter)
+navigation_homing_distance: 3
+
+# Find new exploartion target when in range of current one (meter)
+exploration_goal_distance: 1
+
+# Replanning period (set any to 0 to ignore)
+min_replanning_period: 3
+max_replanning_period: 6.0
+
+# Strategy MinPos
+min_target_area_size: 5.0 #1.0
+visualize_frontiers: true
