@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-  <node pkg="cimatec_simulation" name="robot_vision" type="control_vision.py" output="screen" >
-  </node>
-  
-</launch>

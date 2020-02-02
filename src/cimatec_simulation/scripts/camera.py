@@ -51,7 +51,7 @@ class Camera:
         coordinates = self.obj_coordinate(cnt_yellow)
         coordinates[1] = self.distance_to_camera(coordinates[2])
         cv2.circle(img_rgb, (int(centers[index][0]), int(centers[index][1])), int(radius[index]), (255, 255, 0), 2)
-
+        cv2.putText(img_rgb, 'Ball detected!', (20, 130), font, 2, (0, 0, 255), 5)
     self.pub.publish(coordinates[0], coordinates[1], coordinates[2])
     return img_rgb
 
