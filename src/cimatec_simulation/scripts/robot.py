@@ -21,6 +21,9 @@ from actionlib_msgs.msg import (
 from sensor_msgs.msg import CameraInfo
 from control_pid import ControlPid
 
+#
+# Robot controler
+#
 class Robot:
   camera_info = None
   obj_coordinates = None
@@ -54,6 +57,13 @@ class Robot:
     time.sleep(1)
     cancel_first_map.publish(GoalID())
 
+  #
+  # Init of the robot
+  # Param data: Object parameters in the camera
+  #             data.x - Position of the object in the camera
+  #             data.y - Distance of the object to camera
+  #             data.z - Radius of the object
+  #
   def callback_main(self, data):
     if not self.stop:
       if data.x != -1:
@@ -78,16 +88,30 @@ class Robot:
           rospy.loginfo("Start Explore")
           self.flag_explore = True
 
+  #
+  # Camera information
+  #
   def callback_camera_info(self, data):
     self.camera_info = data
   
+  #
+  # Move-base topic information
+  #
   def callback_move_base_info(self, data):
     self.move_base_info = data
 
+  #
+  # Status of the topic explore
+  #
   def callback_explore_status(self, data):
     if data.status_list:
       self.status_explore_goal = data.status_list[0].status
 
+  #
+  # Moves the robot to the object's position on the map
+  # Param position_x: Position of the object in the camera
+  #       radius: Radius of the object
+  #
   def move_goal_to_object(self, position_x, radius):
     msg_move_to_goal = PoseStamped()
     if not self.time_old or (self.time_old and time.time() - self.time_old > 10):
@@ -101,6 +125,10 @@ class Robot:
       self.pub_move_to_goal.publish(msg_move_to_goal)
       self.time_old = time.time()
 
+  #
+  # Center the object in the camera
+  # Param data: Information of the topic /camera/obj/coordinates
+  #
   def goal_ajustment(self, data):
     msg_twist = Twist()
     while round(msg_twist.angular.z, 1) != 0 and round(msg_twist.linear.x, 1) != 0:
@@ -111,12 +139,15 @@ class Robot:
     rospy.loginfo(time.time() - self.time_start)
     self.stop = True
 
+  #
+  # Start the robot
+  #
   def run(self):
     rospy.Subscriber("/camera/obj/coordinates", Vector3, self.callback_main)
 
 if __name__ == "__main__":
-  rospy.loginfo("Init Control")
-  ctrl_vision = Robot()
-  ctrl_vision.run()
+  rospy.loginfo("Start Robot")
+  robot = Robot()
+  robot.run()
   while not rospy.is_shutdown():
     rospy.spin()    

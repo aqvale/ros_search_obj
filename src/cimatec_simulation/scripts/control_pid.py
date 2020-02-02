@@ -1,6 +1,4 @@
 #!/usr/bin/env python2.7
-import rospy
-
 class ControlPid:
   sat_max = 0
   sat_min = 0
@@ -11,7 +9,6 @@ class ControlPid:
   error_prev = 0 
 
   def __init__ (self, sat_max, sat_min, kp, ki, kd):
-    rospy.init_node("robot_vision", anonymous=True)
     self.sat_max = sat_max 
     self.sat_min = sat_min 
     self.kp = kp 
@@ -30,4 +27,3 @@ class ControlPid:
    
     self.error_prev = self.error
     return control_input
-
