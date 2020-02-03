@@ -81,7 +81,7 @@ class Camera:
   # Return the distance
   #
   def distance_to_camera(self, radius):
-  	return (1 * constant.FOCAL_LENGHT) / (radius * 2)
+  	return constant.FOCAL_LENGHT / (radius * 2)
 
   #
   # Callback of the subscriber 

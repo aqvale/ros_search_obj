@@ -1,5 +1,7 @@
 # ROS Search Yellow Ball 🤖  
 
+
+![Image of Gazebo](doc/print_bot.png)
 ## Requirements :heavy_check_mark:
 
 - [Linux](https://ryanstutorials.net/linuxtutorial/) 18.04 LTS
