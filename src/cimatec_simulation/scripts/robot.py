@@ -68,7 +68,7 @@ class Robot:
     if not self.stop:
       if data.x != -1:
         self.flag_find = True
-        if (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and data.y <= 4:
+        if (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and data.y <= 3:
           rospy.Publisher('/move_base/cancel', GoalID, queue_size=1).publish(GoalID())
           self.goal_ajustment(data)
         else:
@@ -133,7 +133,7 @@ class Robot:
     msg_twist = Twist()
     while round(msg_twist.angular.z, 1) != 0 and round(msg_twist.linear.x, 1) != 0:
       msg_twist.angular.z = self.control_pid_yaw.pid_calculate(0.5, self.camera_info.width/2, int(data.x))
-      msg_twist.linear.x = self.control_pid_x.pid_calculate(0.5, 180, int(data.z))
+      msg_twist.linear.x = self.control_pid_x.pid_calculate(0.5, 200, int(data.z))
       self.pub_cmd_vel.publish(msg_twist)
     rospy.loginfo("Find the ball!")
     rospy.loginfo(time.time() - self.time_start)

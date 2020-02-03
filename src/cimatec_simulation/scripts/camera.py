@@ -28,8 +28,8 @@ class Camera:
   # Param img: Imagem in rbg
   #
   def show_image(self, img):
-    cv2.namedWindow("Image Window", 1)
-    cv2.imshow("Image Window", img)
+    # cv2.namedWindow("Image Window", 1)
+    # cv2.imshow("Image Window", img)
     img_pub = self.bridge.cv2_to_imgmsg(img, "bgr8")
     self.pub_image.publish(img_pub)
     cv2.waitKey(3)
