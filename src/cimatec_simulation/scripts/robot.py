@@ -74,7 +74,7 @@ class Robot:
         else:
           self.move_goal_to_object(data.x, data.z)
 
-        if self.flag_explore and self.status_explore_goal == 1:
+        if self.flag_explore and self.status_explore_goal == 1 and data.y <= 20:
           rospy.loginfo("Stop Explore and kill Operator")
           rospy.Publisher("/Explore/cancel", GoalID, queue_size=1).publish(GoalID())
           os.system("rosnode kill /Operator")
