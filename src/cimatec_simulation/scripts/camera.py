@@ -12,6 +12,7 @@ from geometry_msgs.msg import Vector3
 from collections import deque
 from cv_bridge import CvBridge, CvBridgeError
 
+
 class Camera:
   yellow_range = [(20, 100, 100), (32, 255, 255)]
 
@@ -22,6 +23,10 @@ class Camera:
     self.bridge = CvBridge()
     rospy.loginfo("Init Camera!")
 
+  #
+  # Publisher image in the topic camera
+  # Param img: Imagem in rbg
+  #
   def show_image(self, img):
     cv2.namedWindow("Image Window", 1)
     cv2.imshow("Image Window", img)
@@ -29,6 +34,10 @@ class Camera:
     self.pub_image.publish(img_pub)
     cv2.waitKey(3)
   
+  #
+  # Detect a yellow circle
+  # Param cv_image: Image in format opencv
+  #
   def object_color_detector(self, cv_image):
     img_rgb = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
     hsv = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2HSV)
@@ -51,20 +60,32 @@ class Camera:
         coordinates = self.obj_coordinate(cnt_yellow)
         coordinates[1] = self.distance_to_camera(coordinates[2])
         cv2.circle(img_rgb, (int(centers[index][0]), int(centers[index][1])), int(radius[index]), (255, 255, 0), 2)
-        cv2.putText(img_rgb, 'Ball detected!', (20, 130), font, 2, (0, 0, 255), 5)
+        cv2.putText(img_rgb, 'Ball detected!', (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
     self.pub.publish(coordinates[0], coordinates[1], coordinates[2])
     return img_rgb
 
+  #
+  # Get coordinate of the object
+  # Param cnts: Contour area of the object
+  # Return the position in x, y and the radius
+  #
   def obj_coordinate(self, cnts):
     c = max(cnts, key=cv2.contourArea)
     ((x, y), radius) = cv2.minEnclosingCircle(c)
     M = cv2.moments(c)
     return [int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]), radius]
   
+  #
+  # Compute the distance from the maker to the camera
+  # Param radius: Radius of the object
+  # Return the distance
+  #
   def distance_to_camera(self, radius):
-    # compute and return the distance from the maker to the camera
-  	return (1 * constant.FOCAL_LENGHT) / (radius * 2)
+  	return constant.FOCAL_LENGHT / (radius * 2)
 
+  #
+  # Callback of the subscriber 
+  #
   def image_callback(self, img_msg):
     try:
       cv_image = self.bridge.imgmsg_to_cv2(img_msg, "passthrough")
@@ -72,6 +93,9 @@ class Camera:
     except CvBridgeError, e:
       rospy.logerr("CvBridge Error: {0}".format(e))
 
+  #
+  # Start the camera
+  #
   def run(self):
     self.sub_image = rospy.Subscriber("/diff/camera_top/image_raw", Image, self.image_callback)
 
