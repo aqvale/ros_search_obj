@@ -68,18 +68,18 @@ class Robot:
     if not self.stop:
       if data.x != -1:
         self.flag_find = True
-        if (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and data.y <= 3:
-          rospy.Publisher('/move_base/cancel', GoalID, queue_size=1).publish(GoalID())
-          self.goal_ajustment(data)
-        else:
-          self.move_goal_to_object(data.x, data.z)
-
         if self.flag_explore and self.status_explore_goal == 1 and data.y <= 30:
           rospy.loginfo("Stop Explore and kill Operator")
           rospy.Publisher("/Explore/cancel", GoalID, queue_size=1).publish(GoalID())
           os.system("rosnode kill /Operator")
           time.sleep(5)
           self.flag_explore = False
+
+        if (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and data.y <= 4:
+          rospy.Publisher('/move_base/cancel', GoalID, queue_size=1).publish(GoalID())
+          self.goal_ajustment(data)
+        elif not self.flag_explore:
+          self.move_goal_to_object(data.x, data.z)
       else:
         if not self.flag_find and not self.flag_explore and self.status_explore_goal != 1:
           rospy.loginfo("Wait..")
