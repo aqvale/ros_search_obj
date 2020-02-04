@@ -22,8 +22,8 @@
   <arg name="laser_enabled" default="false"/>
   <arg name="kinect_enabled" default="false"/>
   <arg name="urdf_extras" default="$(find cimatec_simulation)/urdf/main.urdf.xacro"/>
-  <arg name="x" default="45.0"/>
-  <arg name="y" default="-2.0"/>
+  <arg name="x" default="47.0"/>
+  <arg name="y" default="7.0"/>
   <arg name="z" default="0.0"/>
   <arg name="yaw" default="3.1415"/>
 
