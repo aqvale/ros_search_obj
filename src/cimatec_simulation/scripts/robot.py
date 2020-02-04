@@ -39,6 +39,7 @@ class Robot:
     self.control_pid_yaw = ControlPid(3, -3, 0.001, 0, 0)
     self.flag_find = False
     self.flag_explore = False
+    self.flag_move_base = False
     self.stop = False
     self.time_start = time.time()
     
@@ -67,19 +68,21 @@ class Robot:
   def callback_main(self, data):
     if not self.stop:
       if data.x != -1:
-        self.flag_find = True
-        if (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and data.y <= 3:
-          rospy.Publisher('/move_base/cancel', GoalID, queue_size=1).publish(GoalID())
-          self.goal_ajustment(data)
-        else:
-          self.move_goal_to_object(data.x, data.z)
-
         if self.flag_explore and self.status_explore_goal == 1 and data.y <= 30:
           rospy.loginfo("Stop Explore and kill Operator")
           rospy.Publisher("/Explore/cancel", GoalID, queue_size=1).publish(GoalID())
           os.system("rosnode kill /Operator")
           time.sleep(5)
           self.flag_explore = False
+          self.flag_find = True
+          self.flag_move_base = True
+        elif (self.move_base_info.status_list and self.move_base_info.status_list[0].status == 1) and data.y <= 4:
+          rospy.Publisher('/move_base/cancel', GoalID, queue_size=1).publish(GoalID())
+          self.goal_ajustment(data)
+          self.flag_move_base = False
+
+        if self.flag_move_base:
+          self.move_goal_to_object(data.x, data.z)
       else:
         if not self.flag_find and not self.flag_explore and self.status_explore_goal != 1:
           rospy.loginfo("Wait..")
@@ -114,7 +117,7 @@ class Robot:
   #
   def move_goal_to_object(self, position_x, radius):
     msg_move_to_goal = PoseStamped()
-    if not self.time_old or (self.time_old and time.time() - self.time_old > 10):
+    if not self.time_old or (self.time_old and time.time() - self.time_old > 5):
       distance = (1 * constant.FOCAL_LENGHT) / (radius * 2)
       y_move_base = -(position_x - self.camera_info.width/2) / (radius*2) 
       x_move_base = distance if abs(y_move_base) < 0.006 else math.sqrt(distance**2 - y_move_base**2)

@@ -6,24 +6,24 @@ map_inflation_radius: 1.0
 robot_radius: 0.5
 
 # Distance to set the command target in front of the robot
-command_target_distance: 1.0
+command_target_distance: 2.0
 
 # Tolerance in target position for MoveToPosition2D (meter)
-navigation_goal_distance: 1.0
+navigation_goal_distance: 2.0 #1.0
 
 # Toleranvce in target heading for MoveToPosition2D (radians)
 navigation_goal_angle: 3.54
 
 # Distance at which to turn off obstacle avoidance (meter)
-navigation_homing_distance: 3
+navigation_homing_distance: 5.0 #3
 
 # Find new exploartion target when in range of current one (meter)
-exploration_goal_distance: 1
+exploration_goal_distance: 2.0 #1
 
 # Replanning period (set any to 0 to ignore)
-min_replanning_period: 3
-max_replanning_period: 6.0
+min_replanning_period: 0 #3  Better: 0
+max_replanning_period: 0 #6.0 Better: 0
 
 # Strategy MinPos
-min_target_area_size: 5.0 #1.0
+min_target_area_size: 5.0 #Better: 5
 visualize_frontiers: true
