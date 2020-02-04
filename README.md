@@ -10,6 +10,8 @@
 
 ## Quick Start 🏁
 - `git clone https://github.com/aqvale/ros_search_obj.git` 
+- `git clone https://github.com/ros-perception/pointcloud_to_laserscan.git`
+- `git clone https://github.com/husky/husky`
 - Execute `catkin_make`
 - Run `roslaunch cimatec_simulation gazebo.launch`
 
