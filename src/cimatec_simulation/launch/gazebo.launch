@@ -38,7 +38,7 @@
   </include>
 
   <include file="$(find husky_navigation)/launch/move_base.launch">
-    <arg name="no_static_map" value="true"/>
+    <!-- <arg name="no_static_map" value="true"/> -->
   </include>
 
   <!-- Navigation -->
