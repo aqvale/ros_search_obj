@@ -38,14 +38,13 @@
   </include>
 
   <include file="$(find husky_navigation)/launch/move_base.launch">
-    <arg name="no_static_map" value="true"/>
+    <!-- <arg name="no_static_map" value="true"/> -->
   </include>
 
   <!-- Navigation -->
   <rosparam file="$(find nav2d_tutorials)/param/ros.yaml"/>
 
   <node name="Operator" pkg="nav2d_operator" type="operator" >
-		<remap from="scan" to="scan"/>
 		<rosparam file="$(find nav2d_tutorials)/param/operator.yaml"/>
 		<rosparam file="$(find nav2d_tutorials)/param/costmap.yaml" ns="local_map" />
 	</node> 
